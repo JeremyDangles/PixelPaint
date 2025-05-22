@@ -1,0 +1,20 @@
+Definitely:
+    //Add icons for paint and pencil
+    Transparent background
+    Export to png
+    Brush Size
+    More Colours (colour wheel?)
+    retain recent colours in memory
+
+Possibly:
+    Resizable window
+    Resizable cellSize
+    UI not effected by cellSize and windowSize (percent of windowSize?) (rayUI?)
+    Eyedropper tool?
+    Shapes tool? (line, rectangle, circle)
+    Select tool
+    Mirror tool (like in aeasprite)
+    Copy, Cut & paste
+    Undo/Redo
+    Keyboard Shortcuts
+    Save / load progress?

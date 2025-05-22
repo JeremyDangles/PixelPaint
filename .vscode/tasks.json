@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build C++ with raylib",
+        "type": "shell",
+        "command": "clang++",
+        "args": [
+          "-std=c++17",
+          "PixelPaint.cpp",
+          "-o",
+          "PixelPaint",
+          "`pkg-config", "--cflags", "--libs", "raylib`"
+        ],
+        "options": {
+          "shell": {
+            "executable": "/bin/bash",
+            "args": ["-c"]
+          }
+        },
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+  
