@@ -17,6 +17,10 @@ Color setColour(Vector2 mousePosition, int cellSize);
 void toggleCellColour(Color& cellColour, Color initialColour, Color selectedColour);
 void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, int cellSize, int screenWidth, int screenHeight, vector<vector<Color>>& gridColours);
 
+
+Color transparentColour = {0, 0, 0, 0};
+
+
 int main() 
 {
     const int screenWidth =  480;
@@ -29,8 +33,9 @@ int main()
     Color selectedColour = BLACK;
     Color UIGridColour = BLACK;
     Color UIColour = DARKGRAY;
+    
 
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_MSAA_4X_HINT );
     InitWindow(screenWidth, screenHeight, "Window");
     //SetTargetFPS(60);
 
@@ -259,16 +264,15 @@ void exportToPNG(int screenWidth, int screenHeight, int cellSize, vector<vector<
     int columns = screenWidth / cellSize;
     int rows = screenHeight / cellSize;
 
-    RenderTexture2D canvas = LoadRenderTexture(screenWidth,  screenHeight);
-    Color TRANSPARENT = {0, 0, 0, 0};
+    RenderTexture2D canvas = LoadRenderTexture(screenWidth,  (screenHeight - cellSize));
 
     BeginTextureMode(canvas);
-        ClearBackground(TRANSPARENT);
+        ClearBackground(transparentColour);
         for (int row = 1; row < rows; row++)
         {
             for (int column = 0; column < columns; column++)
             {
-                DrawRectangle(column * cellSize, row * cellSize, cellSize, cellSize, gridColours[row][column]);
+                DrawRectangle(column * cellSize, (row - 1) * cellSize, cellSize, cellSize, gridColours[row][column]);
             }
         }
     EndTextureMode();
