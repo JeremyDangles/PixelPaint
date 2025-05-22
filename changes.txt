@@ -1,13 +1,14 @@
+Urgent:
+    Change grid system to only operate on canvas
+    Separate UI grid
+
 Definitely:
-    //Add icons for paint and pencil
-    Transparent background
-    Export to png
+    Add icons for paint and pencil
     Brush Size
     More Colours (colour wheel?)
     retain recent colours in memory
 
 Possibly:
-    Resizable window
     Resizable cellSize
     UI not effected by cellSize and windowSize (percent of windowSize?) (rayUI?)
     Eyedropper tool?

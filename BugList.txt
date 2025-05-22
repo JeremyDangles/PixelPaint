@@ -1,3 +1,2 @@
-Exporting:
-    File is exported upside down
-    File is exporting with an extra row (due to UI?)
+UI scales with window
+Canvas grid incorrect (only covers 1/4 of canvas)

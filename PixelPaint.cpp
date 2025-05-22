@@ -7,6 +7,8 @@ using namespace std;
 
 bool coloursAreEqual(Color firstColour, Color secondColour);
 void drawGrid(int screenWidth, int screenHeight, int cellSize);
+void drawButtonUI(int screenWidth, int screenHeight);
+void drawCanvas(int screenWidth, int screenHeight, int canvasWidth, int canvasHeight);
 void drawUIGrid(int screenWidth, int screenHeight, int cellSize);
 void exportToPNG(int screenWidth, int screenHeight, int cellSize, vector<vector<Color>>& gridColours);
 void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color& selectedColour, bool& paintBucketActive, int screenWidth, int screenHeight);
@@ -15,31 +17,87 @@ void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActi
 void mouseHoverUI(int cellSize);
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows);
 Color setColour(Vector2 mousePosition, int cellSize);
-void toggleCellColour(Color& cellColour);
-
 
 Color initialColour = WHITE;
-Color gridColour = GRAY;
+Color gridColour = RED;
 Color selectedColour = BLACK;
 Color transparentColour = {0, 0, 0, 0};
-Color UIGridColour = BLACK;
+Color UIGridColour = GRAY;
 Color UIColour = DARKGRAY;
 
+class Canvas 
+{
+    private:
+        int canvasWidth = 0;
+        int canvasHeight = 0;
+        Color canvasColour = transparentColour;
+        int gridSize = 0;
+
+    public:
+        Canvas(int width, int height, Color colour, int cellSize)
+        {
+            canvasWidth = width;
+            canvasHeight = height;
+            canvasColour = colour;
+            gridSize = cellSize;
+        }
+
+        void drawCanvas(float xOffset, float yOffset) const
+        {
+            DrawRectangle(static_cast<int>(xOffset), static_cast<int>(yOffset), canvasWidth, canvasHeight, canvasColour);
+        } 
+
+        void drawGrid(int xOffset, int yOffset) const           // I'm sorry what the fuck is going on here
+        {
+            int left   = xOffset - canvasWidth / 2.0f;
+            int right  = xOffset + canvasWidth / 2.0f;
+            int top    = yOffset - canvasHeight / 2.0f;
+            int bottom = yOffset + canvasHeight / 2.0f;
+
+            for (int x = left; x <= right; x += gridSize)
+            {
+                DrawLine(x, top, x, bottom, gridColour);
+            }
+
+            for (int y = top; y <= bottom; y += gridSize)
+            {
+                DrawLine(left, y, right, y, gridColour);
+            }
+        }
+
+        Vector2 getCanvasCentrePosition() const
+        {
+            float canvasCentrePositionX = canvasWidth / 2;
+            float canvasCentrePositionY = canvasHeight / 2;
+
+            Vector2 canvasCentrePosition = { canvasCentrePositionX, canvasCentrePositionY };
+            return canvasCentrePosition;
+        }
+
+        int getHeight() const
+        {
+            return canvasHeight;
+        }
+
+        int getWidth() const
+        {
+            return canvasWidth;
+        }
+};
 
 int main() 
 {
-    const int screenWidth =  512;
-    const int screenHeight = 512 + 32;
-    const int cellSize = 32;
+    const int screenWidth =  1600;
+    const int screenHeight = 900;
+    const int cellSize = 16;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
-    InitWindow(screenWidth, screenHeight, "Window");
+    InitWindow(screenWidth, screenHeight, "PixelPaint :)");
     //SetTargetFPS(60);
 
     int columns = screenWidth / cellSize;
     int rows = screenHeight / cellSize;
     bool paintBucketActive = false;
-    //int brushSize = 1;
 
     vector<vector<Color>> gridColours(rows, vector<Color>(columns));
 
@@ -49,7 +107,19 @@ int main()
         handleRightMouseClick(gridColours, columns, rows, cellSize);
 
         BeginDrawing();
-            ClearBackground(LIGHTGRAY);
+            ClearBackground(DARKGRAY);
+
+            int canvasWidth = screenWidth / 2;
+            int canvasHeight = screenHeight / 2;
+            //drawButtonUI(screenWidth, screenHeight);  // ASK USER FOR CANVAS SIZE
+
+            Vector2 mousePosition = GetMousePosition();
+            cout << "MouseX: " << mousePosition.x << endl;
+            cout << "MouseY: " << mousePosition.y << endl;
+
+            Canvas currentCanvas(canvasWidth, canvasHeight, WHITE, cellSize);
+            currentCanvas.drawCanvas((screenWidth / 4), (screenHeight / 4));
+            currentCanvas.drawGrid((screenWidth / 4), (screenHeight / 4));
 
             for (int row = 0; row < rows; row++)
             {
@@ -91,9 +161,18 @@ void drawGrid(int screenWidth, int screenHeight, int cellSize, Color gridColour)
     }
 }
 
+void drawButtonUI(int screenWidth, int screenHeight)
+{
+    int boxWidth = (int)(screenWidth * 0.3);
+    int boxHeight = (int)(screenHeight * 0.5);
+    DrawRectangle((screenWidth / 2) - (boxWidth / 2) , (screenHeight / 2) - (boxHeight / 2), boxWidth, boxHeight, WHITE);
+
+    DrawText("Canvas size:", (screenWidth / 2) , (screenHeight / 2),  20, BLACK);
+}
+
 void drawUIGrid(int screenWidth, int screenHeight, int cellSize)
 {
-    DrawRectangle(0, 0, screenWidth, cellSize, GRAY); // BACKGROUND
+    DrawRectangle(0, 0, screenWidth, cellSize, UIColour); // BACKGROUND
     DrawText("Pencil", cellSize * 1.2, cellSize / 2, 10, BLACK); //PENCIL TEXT
     DrawText("Bucket", (cellSize * 1.1) * 2, cellSize / 2, 10, BLACK); //BUCKET TEXT
     DrawRectangle(cellSize * 3, 0, cellSize, cellSize, RED); // RED
@@ -107,7 +186,7 @@ void drawUIGrid(int screenWidth, int screenHeight, int cellSize)
 
     for (int x = 0; x <= screenWidth; x += cellSize)
     {
-        DrawLine(x, 0, x, cellSize, UIColour);
+        DrawLine(x, 0, x, cellSize, UIGridColour);
     }
     DrawLine(0, cellSize, screenWidth, cellSize, UIGridColour);
 }
@@ -268,16 +347,4 @@ Color setColour(Vector2 mousePosition, int cellSize)
         case 10: return WHITE;
         default: return BLACK;
     }   
-}
-
-void toggleCellColour(Color& cellColour)
-{
-    if (coloursAreEqual(cellColour, initialColour))
-    {
-        cellColour =  selectedColour;
-    }
-    else
-    {
-        cellColour = initialColour;
-    }
 }
