@@ -6,36 +6,33 @@
 using namespace std;
 
 bool coloursAreEqual(Color firstColour, Color secondColour);
-void drawGrid(int screenWidth, int screenHeight, int cellSize, Color gridColour);
-void drawUIGrid(int screenWidth, int screenHeight, int cellSize, Color UIGridColour, Color UIColour);
+void drawGrid(int screenWidth, int screenHeight, int cellSize);
+void drawUIGrid(int screenWidth, int screenHeight, int cellSize);
 void exportToPNG(int screenWidth, int screenHeight, int cellSize, vector<vector<Color>>& gridColours);
-void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color initialColour, Color& selectedColour, bool& paintBucketActive, int screenWidth, int screenHeight);
-void handleRightMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color initialColour, Color selectedColour);
+void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color& selectedColour, bool& paintBucketActive, int screenWidth, int screenHeight);
+void handleRightMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize);
+void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, int cellSize, int screenWidth, int screenHeight, vector<vector<Color>>& gridColours);
 void mouseHoverUI(int cellSize);
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows);
 Color setColour(Vector2 mousePosition, int cellSize);
-void toggleCellColour(Color& cellColour, Color initialColour, Color selectedColour);
-void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, int cellSize, int screenWidth, int screenHeight, vector<vector<Color>>& gridColours);
+void toggleCellColour(Color& cellColour);
 
 
+Color initialColour = WHITE;
+Color gridColour = GRAY;
+Color selectedColour = BLACK;
 Color transparentColour = {0, 0, 0, 0};
+Color UIGridColour = BLACK;
+Color UIColour = DARKGRAY;
 
 
 int main() 
 {
-    const int screenWidth =  480;
-    const int screenHeight = 480;
-    const int cellSize = 30;
+    const int screenWidth =  512;
+    const int screenHeight = 512 + 32;
+    const int cellSize = 32;
 
-    Color backgroundColour = WHITE;
-    Color initialColour = WHITE;
-    Color gridColour = LIGHTGRAY;
-    Color selectedColour = BLACK;
-    Color UIGridColour = BLACK;
-    Color UIColour = DARKGRAY;
-    
-
-    SetConfigFlags(FLAG_MSAA_4X_HINT );
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Window");
     //SetTargetFPS(60);
 
@@ -44,15 +41,15 @@ int main()
     bool paintBucketActive = false;
     //int brushSize = 1;
 
-    vector<vector<Color>> gridColours(rows, vector<Color>(columns, initialColour));
+    vector<vector<Color>> gridColours(rows, vector<Color>(columns));
 
     while(!WindowShouldClose())
     {
-        handleLeftMouseClick(gridColours, columns, rows, cellSize, initialColour, selectedColour, paintBucketActive, screenWidth, screenHeight);
-        handleRightMouseClick(gridColours, columns, rows, cellSize, initialColour, selectedColour);
+        handleLeftMouseClick(gridColours, columns, rows, cellSize, selectedColour, paintBucketActive, screenWidth, screenHeight);
+        handleRightMouseClick(gridColours, columns, rows, cellSize);
 
         BeginDrawing();
-            ClearBackground(backgroundColour);
+            ClearBackground(LIGHTGRAY);
 
             for (int row = 0; row < rows; row++)
             {
@@ -61,7 +58,7 @@ int main()
                     DrawRectangle(column * cellSize, row * cellSize, cellSize, cellSize, gridColours[row][column]);
                 }
             }
-            drawUIGrid(screenWidth, screenHeight, cellSize, UIGridColour, UIColour);
+            drawUIGrid(screenWidth, screenHeight, cellSize);
             mouseHoverUI(cellSize);
             //drawGrid(screenWidth, screenHeight, cellSize, gridColour);
 
@@ -74,7 +71,27 @@ int main()
     return 0;
 }
 
-void drawUIGrid(int screenWidth, int screenHeight, int cellSize, Color UIGridColour, Color UIColour)
+bool coloursAreEqual(Color firstColour, Color secondColour)
+{
+    return ((firstColour.r == secondColour.r) &&
+            (firstColour.g == secondColour.g) &&
+            (firstColour.b == secondColour.b) &&
+            (firstColour.a == secondColour.a));
+}
+
+void drawGrid(int screenWidth, int screenHeight, int cellSize, Color gridColour)
+{
+    for (int x = 0; x <= screenWidth; x += cellSize)
+    {
+        DrawLine(x, 0, x, screenHeight, gridColour);
+    }
+    for (int y = 0; y <= screenHeight; y += cellSize)
+    {
+        DrawLine(0, y, screenWidth, y, gridColour);
+    }
+}
+
+void drawUIGrid(int screenWidth, int screenHeight, int cellSize)
 {
     DrawRectangle(0, 0, screenWidth, cellSize, GRAY); // BACKGROUND
     DrawText("Pencil", cellSize * 1.2, cellSize / 2, 10, BLACK); //PENCIL TEXT
@@ -95,31 +112,33 @@ void drawUIGrid(int screenWidth, int screenHeight, int cellSize, Color UIGridCol
     DrawLine(0, cellSize, screenWidth, cellSize, UIGridColour);
 }
 
-void mouseHoverUI(int cellSize)
+void exportToPNG(int screenWidth, int screenHeight, int cellSize, vector<vector<Color>>& gridColours)
 {
-    Vector2 currentMousePosition = { (float)GetMouseX(), (float)GetMouseY() };
+    int columns = screenWidth / cellSize;
+    int rows = screenHeight / cellSize;
 
-    if (currentMousePosition.y >= 0 && currentMousePosition.y <= cellSize)
-    {
-        int hoveredCellIndex = (int)(currentMousePosition.x / cellSize);
-        int highlightX = hoveredCellIndex * cellSize;
-        DrawRectangleLines(highlightX, 0, cellSize, cellSize, WHITE);
-    }  
+    RenderTexture2D canvas = LoadRenderTexture(screenWidth,  (screenHeight - cellSize));
+
+    BeginTextureMode(canvas);
+        ClearBackground(transparentColour);
+        for (int row = 1; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                DrawRectangle(column * cellSize, (row - 1) * cellSize, cellSize, cellSize, gridColours[row][column]);
+            }
+        }
+    EndTextureMode();
+
+    Image image = LoadImageFromTexture(canvas.texture);
+    ImageFlipVertical(&image);
+    ExportImage(image, "PixelPaint.png");
+    
+    UnloadImage(image);
+    UnloadRenderTexture(canvas);
 }
 
-void drawGrid(int screenWidth, int screenHeight, int cellSize, Color gridColour)
-{
-    for (int x = 0; x <= screenWidth; x += cellSize)
-    {
-        DrawLine(x, 0, x, screenHeight, gridColour);
-    }
-    for (int y = 0; y <= screenHeight; y += cellSize)
-    {
-        DrawLine(0, y, screenWidth, y, gridColour);
-    }
-}
-
-void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color initialColour, Color& selectedColour, bool& paintBucketActive, int screenWidth, int screenHeight)
+void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color& selectedColour, bool& paintBucketActive, int screenWidth, int screenHeight)
 {
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
     {
@@ -145,7 +164,7 @@ void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int r
     }
 }
 
-void handleRightMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize, Color initialColour, Color selectedColour)
+void handleRightMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, int cellSize)
 {
     if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
     {
@@ -155,47 +174,41 @@ void handleRightMouseClick(vector<vector<Color>>& gridColours, int columns, int 
 
         if (row >= 1 && row < rows && column >= 0 && column < columns)
         {
-            gridColours[row][column] = initialColour;
+            gridColours[row][column] = transparentColour;
         }
     }
 }
 
-void toggleCellColour(Color& cellColour, Color initialColour, Color selectedColour)
+void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, int cellSize, int screenWidth, int screenHeight, vector<vector<Color>>& gridColours)
 {
-    if (coloursAreEqual(cellColour, initialColour))
+    if (column == 0)
     {
-        cellColour =  selectedColour;
+        exportToPNG(screenWidth, screenHeight, cellSize, gridColours);
     }
-    else
+    if (column == 1)
     {
-        cellColour = initialColour;
+        paintBucketActive = false;
+    }
+    else if (column == 2)
+    {
+        paintBucketActive = true;
+    }
+    else if (column >= 3 && column <= 10)
+    {
+        selectedColour = setColour(mousePosition, cellSize);
     }
 }
 
-bool coloursAreEqual(Color firstColour, Color secondColour)
+void mouseHoverUI(int cellSize)
 {
-    return ((firstColour.r == secondColour.r) &&
-            (firstColour.g == secondColour.g) &&
-            (firstColour.b == secondColour.b) &&
-            (firstColour.a == secondColour.a));
-}
+    Vector2 currentMousePosition = { (float)GetMouseX(), (float)GetMouseY() };
 
-Color setColour(Vector2 mousePosition, int cellSize)
-{
-    int cellIndex = (mousePosition.x / cellSize);
-
-    switch (cellIndex)
+    if (currentMousePosition.y >= 0 && currentMousePosition.y <= cellSize)
     {
-        case 3: return RED;
-        case 4: return ORANGE;
-        case 5: return YELLOW;
-        case 6: return GREEN;
-        case 7: return BLUE;
-        case 8: return PURPLE;
-        case 9: return BLACK;
-        case 10: return WHITE;
-        default: return BLACK;
-    }   
+        int hoveredCellIndex = (int)(currentMousePosition.x / cellSize);
+        int highlightX = hoveredCellIndex * cellSize;
+        DrawRectangleLines(highlightX, 0, cellSize, cellSize, WHITE);
+    }  
 }
 
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows)
@@ -239,48 +252,32 @@ void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vec
     }
 }
 
-void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, int cellSize, int screenWidth, int screenHeight, vector<vector<Color>>& gridColours)
+Color setColour(Vector2 mousePosition, int cellSize)
 {
-    if (column == 0)
+    int cellIndex = (mousePosition.x / cellSize);
+
+    switch (cellIndex)
     {
-        exportToPNG(screenWidth, screenHeight, cellSize, gridColours);
-    }
-    if (column == 1)
-    {
-        paintBucketActive = false;
-    }
-    else if (column == 2)
-    {
-        paintBucketActive = true;
-    }
-    else if (column >= 3 && column <= 10)
-    {
-        selectedColour = setColour(mousePosition, cellSize);
-    }
+        case 3: return RED;
+        case 4: return ORANGE;
+        case 5: return YELLOW;
+        case 6: return GREEN;
+        case 7: return BLUE;
+        case 8: return PURPLE;
+        case 9: return BLACK;
+        case 10: return WHITE;
+        default: return BLACK;
+    }   
 }
 
-void exportToPNG(int screenWidth, int screenHeight, int cellSize, vector<vector<Color>>& gridColours)
+void toggleCellColour(Color& cellColour)
 {
-    int columns = screenWidth / cellSize;
-    int rows = screenHeight / cellSize;
-
-    RenderTexture2D canvas = LoadRenderTexture(screenWidth,  (screenHeight - cellSize));
-
-    BeginTextureMode(canvas);
-        ClearBackground(transparentColour);
-        for (int row = 1; row < rows; row++)
-        {
-            for (int column = 0; column < columns; column++)
-            {
-                DrawRectangle(column * cellSize, (row - 1) * cellSize, cellSize, cellSize, gridColours[row][column]);
-            }
-        }
-    EndTextureMode();
-
-    Image image = LoadImageFromTexture(canvas.texture);
-    ImageFlipVertical(&image);
-    ExportImage(image, "PixelPaint.png");
-    
-    UnloadImage(image);
-    UnloadRenderTexture(canvas);
+    if (coloursAreEqual(cellColour, initialColour))
+    {
+        cellColour =  selectedColour;
+    }
+    else
+    {
+        cellColour = initialColour;
+    }
 }
