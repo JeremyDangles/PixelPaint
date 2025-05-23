@@ -8,33 +8,94 @@ using namespace std;
 
 bool coloursAreEqual(Color firstColour, Color secondColour);
 void drawButtonUI();
-void drawUIGrid();
 void exportToPNG(vector<vector<Color>>& gridColours);
 string GetColorName(Color currentColour);
-void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, Color& selectedColour, bool& paintBucketActive);
-void handleRightMouseClick(Canvas currentCanvas, pair<int, int> currentCell);
 void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, vector<vector<Color>>& gridColours);
-void mouseHoverUI();
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows);
 Color setColour(Vector2 mousePosition, int cellSize);
 
-Color initialColour = WHITE;
+Color UIHoverColour = WHITE;
 Color gridColour = RED;
 Color selectedColour = BLACK;
 Color transparentColour = {0, 0, 0, 0};
-Color UIGridColour = GRAY;
+Color backgroundColour = {50, 50, 50, 255};
+Color UIGridColour = {40, 40, 40, 255};
 Color UIColour = DARKGRAY;
 
 int screenWidth =  512;
 int screenHeight = 512;
 int cellSize = 16;
 
+int UIWidth = 32;
+int UIHeight = screenHeight;
+int UIGridSize = screenHeight / 32;
+
+class UI
+{
+    private:
+        int width = 0;
+        int height = 0;
+        int gridSize = 0;
+        Color colour = DARKGRAY;
+        Color gridColour = UIGridColour;
+        Color hoverColour = WHITE;
+        
+    public:
+        UI(int width, int height, int gridSize, Color colour, Color gridColour, Color hoverColour)
+        {
+            this->width = width;
+            this->height = height;
+            this->gridSize = gridSize;
+            this->colour = colour;
+            this->gridColour = gridColour;
+            this->hoverColour = hoverColour;
+        }
+
+        void draw()
+        {
+            DrawRectangle(0, 0, width, height, colour);
+
+            int cellSize = (height / gridSize);
+
+            for (int y = 0; y < height; y += cellSize)
+            {
+                DrawRectangleLines(0, y, width, cellSize, gridColour); //Draws button outlines
+            }
+        }
+
+        void drawHoverColour(int hoverIndex)
+        {
+            if (hoverIndex < 0 || hoverIndex >= gridSize)
+            {
+                return;
+            }
+
+            int cellSize = (height / gridSize);
+            int y = hoverIndex * cellSize;
+
+            DrawRectangleLines(0, y, width, cellSize, hoverColour);
+        }
+
+        int getButton(Vector2 position)
+        {
+            if (position.x < 0 || position.x > width || position.y < 0 || position.y > height)
+            {
+                return -1;
+            }
+
+            int cellSize = height / gridSize;
+            int currentButton = position.y / cellSize;
+
+            return currentButton;
+        }
+};
+
 int main() 
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "PixelPaint :)");
 
-    int columns = screenWidth / cellSize;
+    int columns = screenWidth / cellSize; 
     int rows = screenHeight / cellSize;
     bool paintBucketActive = false;
 
@@ -42,24 +103,30 @@ int main()
 
     int canvasWidth = 256;
     int canvasHeight = 256;
+
     Canvas currentCanvas(canvasWidth, canvasHeight, WHITE, cellSize);
     currentCanvas.createGrid();
+
+    UI UI(UIWidth, UIHeight, UIGridSize, UIColour, UIGridColour, UIHoverColour);
 
     while(!WindowShouldClose())
     {
         BeginDrawing();
 
-            ClearBackground(DARKGRAY);
+            ClearBackground(backgroundColour);
 
             int xOffset = screenWidth / 4;
             int yOffset = screenHeight / 4;
 
             currentCanvas.drawCanvas(xOffset, yOffset);
+            UI.draw();
 
             Vector2 mousePosition = GetMousePosition();
             pair <int, int> currentCell = currentCanvas.getCellCoordinates(mousePosition, xOffset, yOffset);
             string currentCellColour = GetColorName(currentCanvas.getCellColour(currentCell, currentCanvas.isWithinCanvas(currentCell)));
-
+            
+            UI.drawHoverColour(UI.getButton(mousePosition));
+            cout << UI.getButton(mousePosition) << endl;
                 if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
                 {
                     if (currentCanvas.isWithinCanvas(currentCell))
@@ -79,10 +146,10 @@ int main()
                 currentCanvas.drawCanvas(xOffset, yOffset);
                 currentCanvas.updateCanvasGridColours(xOffset, yOffset);
 
-                DrawFPS(screenWidth - 100, screenHeight - 50);
+                DrawFPS(screenWidth - 150, screenHeight - 50);
 
-                drawUIGrid();
-                mouseHoverUI();
+                //drawUIGrid();
+                //mouseHoverUI();
 
                 //currentCanvas.drawGrid((screenWidth / 4), (screenHeight / 4));
 
@@ -107,27 +174,6 @@ void drawButtonUI()
     DrawRectangle((screenWidth / 2) - (boxWidth / 2) , (screenHeight / 2) - (boxHeight / 2), boxWidth, boxHeight, WHITE);
 
     DrawText("Canvas size:", (screenWidth / 2) , (screenHeight / 2),  20, BLACK);
-}
-
-void drawUIGrid()
-{
-    DrawRectangle(0, 0, screenWidth, cellSize, UIColour); // BACKGROUND
-    DrawText("Pencil", cellSize * 1.2, cellSize / 2, 10, BLACK); //PENCIL TEXT
-    DrawText("Bucket", (cellSize * 1.1) * 2, cellSize / 2, 10, BLACK); //BUCKET TEXT
-    DrawRectangle(cellSize * 3, 0, cellSize, cellSize, RED); // RED
-    DrawRectangle(cellSize * 4, 0, cellSize, cellSize, ORANGE); // ORANGE
-    DrawRectangle(cellSize * 5, 0, cellSize, cellSize, YELLOW); // YELLOW
-    DrawRectangle(cellSize * 6, 0, cellSize, cellSize, GREEN); // GREEN
-    DrawRectangle(cellSize * 7, 0, cellSize, cellSize, BLUE); // BLUE
-    DrawRectangle(cellSize * 8, 0, cellSize, cellSize, PURPLE); // PURPLE
-    DrawRectangle(cellSize * 9, 0, cellSize, cellSize, BLACK); // BLACK
-    DrawRectangle(cellSize * 10, 0, cellSize, cellSize, WHITE); // WHITE
-
-    for (int x = 0; x <= screenWidth; x += cellSize)
-    {
-        DrawLine(x, 0, x, cellSize, UIGridColour);
-    }
-    DrawLine(0, cellSize, screenWidth, cellSize, UIGridColour);
 }
 
 void exportToPNG(vector<vector<Color>>& gridColours)
@@ -170,43 +216,6 @@ string GetColorName(Color currentColour)
     return "UNKNOWN"; 
 }
 
-void handleLeftMouseClick(vector<vector<Color>>& gridColours, int columns, int rows, Color& selectedColour, bool& paintBucketActive)
-{
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-    {
-        Vector2 mousePosition = GetMousePosition();
-        int column = mousePosition.x / cellSize;
-        int row = mousePosition.y / cellSize;
-
-        if (row == 0)
-        {
-            handleToolbarClick(column, selectedColour, paintBucketActive, mousePosition, gridColours);
-        }
-        else if (row >= 1 && row < rows && column >= 0 && column < columns)
-        {
-            if (paintBucketActive)
-            {
-                paintBucket(column, row, selectedColour, gridColours, columns, rows);
-            }
-            else
-            {
-                gridColours[row][column] = selectedColour;
-            }
-        }
-    }
-}
-
-void handleRightMouseClick(Canvas currentCanvas, pair<int, int> currentCell)
-{
-    if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
-    {
-        if (currentCanvas.isWithinCanvas(currentCell))
-        {
-            currentCanvas.setCellColour(currentCell, transparentColour);
-        }
-    }
-}
-
 void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, vector<vector<Color>>& gridColours)
 {
     if (column == 0)
@@ -227,17 +236,6 @@ void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActi
     }
 }
 
-void mouseHoverUI()
-{
-    Vector2 currentMousePosition = { (float)GetMouseX(), (float)GetMouseY() };
-
-    if (currentMousePosition.y >= 0 && currentMousePosition.y <= cellSize)
-    {
-        int hoveredCellIndex = (int)(currentMousePosition.x / cellSize);
-        int highlightX = hoveredCellIndex * cellSize;
-        DrawRectangleLines(highlightX, 0, cellSize, cellSize, WHITE);
-    }  
-}
 
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows)
 {
