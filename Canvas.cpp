@@ -34,7 +34,9 @@ void Canvas::createGrid()
     int columns = canvasWidth / gridSize;
     int rows = canvasHeight / gridSize;
 
-    canvasGrid.resize(rows, vector<Color>(columns, canvasColour));
+    Color transparent = { 0, 0, 0, 0 };
+
+    canvasGrid.resize(rows, vector<Color>(columns, transparent));
 }
 
 vector<vector<Color>> Canvas::getCanvasGrid()

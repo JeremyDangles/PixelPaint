@@ -7,8 +7,7 @@
 using namespace std;
 
 bool coloursAreEqual(Color firstColour, Color secondColour);
-void drawButtonUI();
-void exportToPNG(vector<vector<Color>>& gridColours);
+void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell);
 string GetColorName(Color currentColour);
 void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActive, Vector2 mousePosition, vector<vector<Color>>& gridColours);
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows);
@@ -54,13 +53,24 @@ class UI
         void draw()
         {
             DrawRectangle(0, 0, width, height, colour);
+        }
 
+        void drawGrid()
+        {
             int cellSize = (height / gridSize);
+
+            vector<Color> colours = { RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE, BLACK };
+            int numberOfColours = colours.size();
+
+            for (int y = 0; y < numberOfColours; y++)
+            {
+                DrawRectangle(0, y * cellSize, width, cellSize, colours[y]); 
+            }
 
             for (int y = 0; y < height; y += cellSize)
             {
                 DrawRectangleLines(0, y, width, cellSize, gridColour); //Draws button outlines
-            }
+            }      
         }
 
         void drawHoverColour(int hoverIndex)
@@ -87,6 +97,12 @@ class UI
             int currentButton = position.y / cellSize;
 
             return currentButton;
+        }
+
+        void setButtonColour(Color colour)
+        {
+            int cellSize = (height / gridSize);
+            DrawRectangle(0, 0, width, cellSize, colour);
         }
 };
 
@@ -121,9 +137,10 @@ int main()
             currentCanvas.drawCanvas(xOffset, yOffset);
             UI.draw();
 
+            UI.drawGrid();
+
             Vector2 mousePosition = GetMousePosition();
             pair <int, int> currentCell = currentCanvas.getCellCoordinates(mousePosition, xOffset, yOffset);
-            string currentCellColour = GetColorName(currentCanvas.getCellColour(currentCell, currentCanvas.isWithinCanvas(currentCell)));
             
             UI.drawHoverColour(UI.getButton(mousePosition));
             cout << UI.getButton(mousePosition) << endl;
@@ -132,6 +149,22 @@ int main()
                     if (currentCanvas.isWithinCanvas(currentCell))
                     {
                         currentCanvas.setCellColour(currentCell, selectedColour);
+                    }
+                }
+
+                vector<Color> colourButtons = { RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE, BLACK };
+                int buttonIndex = UI.getButton(mousePosition);
+
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    if (buttonIndex >= 0 && buttonIndex < colourButtons.size())
+                    {
+                        selectedColour = colourButtons[buttonIndex];
+                    }
+
+                    if (buttonIndex == 10)
+                    {
+                        exportToPNG(currentCanvas, currentCell);
                     }
                 }
 
@@ -148,11 +181,6 @@ int main()
 
                 DrawFPS(screenWidth - 150, screenHeight - 50);
 
-                //drawUIGrid();
-                //mouseHoverUI();
-
-                //currentCanvas.drawGrid((screenWidth / 4), (screenHeight / 4));
-
         EndDrawing();
     }
     CloseWindow();
@@ -167,29 +195,23 @@ bool coloursAreEqual(Color firstColour, Color secondColour)
             (firstColour.a == secondColour.a));
 }
 
-void drawButtonUI()
+void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell)
 {
-    int boxWidth = (int)(screenWidth * 0.3);
-    int boxHeight = (int)(screenHeight * 0.5);
-    DrawRectangle((screenWidth / 2) - (boxWidth / 2) , (screenHeight / 2) - (boxHeight / 2), boxWidth, boxHeight, WHITE);
+    int columns = currentCanvas.getWidth() / cellSize;
+    int rows = currentCanvas.getHeight() / cellSize;
 
-    DrawText("Canvas size:", (screenWidth / 2) , (screenHeight / 2),  20, BLACK);
-}
-
-void exportToPNG(vector<vector<Color>>& gridColours)
-{
-    int columns = screenWidth / cellSize;
-    int rows = screenHeight / cellSize;
-
-    RenderTexture2D canvas = LoadRenderTexture(screenWidth,  (screenHeight - cellSize));
+    RenderTexture2D canvas = LoadRenderTexture(currentCanvas.getWidth(),  currentCanvas.getHeight());
 
     BeginTextureMode(canvas);
         ClearBackground(transparentColour);
-        for (int row = 1; row < rows; row++)
+        for (int row = 0; row < rows; row++)
         {
             for (int column = 0; column < columns; column++)
             {
-                DrawRectangle(column * cellSize, (row - 1) * cellSize, cellSize, cellSize, gridColours[row][column]);
+                pair <int, int> cell = {column, row};
+                bool isInsideCanvas = currentCanvas.isWithinCanvas(cell);
+                Color colour = currentCanvas.getCellColour(cell, isInsideCanvas);
+                DrawRectangle(column * cellSize, (row - 1) * cellSize, cellSize, cellSize, colour);
             }
         }
     EndTextureMode();
@@ -220,7 +242,7 @@ void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActi
 {
     if (column == 0)
     {
-        exportToPNG(gridColours);
+        //exportToPNG(gridColours);
     }
     if (column == 1)
     {
@@ -235,7 +257,6 @@ void handleToolbarClick(int column, Color& selectedColour, bool& paintBucketActi
         //selectedColour = setColour(mousePosition);
     }
 }
-
 
 void paintBucket(int initialCellColumn, int initialCellRow, Color newColour, vector<vector<Color>>& gridColours, int columns, int rows)
 {

@@ -1,2 +1,2 @@
-UI scales with window
-Canvas grid incorrect (only covers 1/4 of canvas)
+UI and Canvas scale with window
+
