@@ -1,4 +1,4 @@
-#include <canvas.h>
+#include "canvas.h"
 #include <iostream>
 #include <raylib.h>
 #include <vector>
@@ -26,8 +26,6 @@ Color selectedColour = BLACK;
 Color transparentColour = {0, 0, 0, 0};
 Color UIGridColour = GRAY;
 Color UIColour = DARKGRAY;
-
-
 
 int main() 
 {
