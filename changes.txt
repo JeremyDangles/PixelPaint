@@ -1,5 +1,4 @@
 Urgent:
-    Change grid system to only operate on canvas
     Separate UI grid
 
 Definitely:
