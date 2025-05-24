@@ -11,9 +11,8 @@ using namespace std;
 bool coloursAreEqual(Color firstColour, Color secondColour);
 void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell);
 string GetColorName(Color currentColour);
-void handleUserInput(UI UI, Canvas& currentCanvas, pair <int, int> currentCell, Vector2 mousePosition);
+void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> currentCell, Vector2 mousePosition);
 void paintBucket(Canvas& currentCanvas, pair<int, int> currentCell, Color newColour);
-Color setColour(Vector2 mousePosition, int cellSize);
 
 Color UIHoverColour = WHITE;
 Color gridColour = RED;
@@ -33,7 +32,11 @@ int UIGridSize = screenHeight / 32;
 
 bool pencilSelected = true;
 bool paintBucketSelected = false;
+bool downloadSelected = false;
 
+bool showDownloadFeedback = false;
+float downloadStartTime = 0.0f;
+const float DOWNLOAD_DISPLAY_TIME = 0.15;
 
 int main() 
 {
@@ -48,11 +51,18 @@ int main()
     int canvasWidth = 256;
     int canvasHeight = 256;
 
-    Canvas currentCanvas(canvasWidth, canvasHeight, WHITE, cellSize);
+    Canvas currentCanvas(canvasWidth, canvasHeight, LIGHTGRAY, cellSize);
     currentCanvas.createGrid();
 
-    UI UI(UIWidth, UIHeight, UIGridSize, UIColour, UIGridColour, UIHoverColour);
+    UI currentUI(UIWidth, UIHeight, UIGridSize, UIColour, UIGridColour, UIHoverColour);
 
+    Texture2D pencilIconIdle = currentUI.loadButton("pencilIcon_Idle.png", cellSize);
+    Texture2D paintBucketIconIdle = currentUI.loadButton("paintBucketIcon_Idle.png", cellSize);
+    Texture2D downloadIconIdle = currentUI.loadButton("downloadIcon_Idle.png", cellSize);
+
+    Texture2D pencilIconActive = currentUI.loadButton("pencilIcon_Active.png", cellSize);
+    Texture2D paintBucketIconActive = currentUI.loadButton("paintBucketIcon_Active.png", cellSize);
+    Texture2D downloadIconActive = currentUI.loadButton("downloadIcon_Active.png", cellSize);
 
     while(!WindowShouldClose())
     {
@@ -62,12 +72,40 @@ int main()
             int xOffset = screenWidth / 4;
             int yOffset = screenHeight / 4;
 
-            UI.draw();
-            UI.drawGrid();
+            currentUI.draw();
+            currentUI.drawGrid();
 
             Vector2 mousePosition = GetMousePosition();
             pair <int, int> currentCell = currentCanvas.getCellCoordinates(mousePosition, xOffset, yOffset);
-            handleUserInput(UI, currentCanvas, currentCell, mousePosition);
+            handleUserInput(currentUI, currentCanvas, currentCell, mousePosition);
+
+            if (pencilSelected)
+            {
+                currentUI.drawButton(pencilIconActive, 8, cellSize);
+            }
+            else
+            {
+                currentUI.drawButton(pencilIconIdle, 8, cellSize);
+            }
+
+            if (paintBucketSelected)
+            {
+                currentUI.drawButton(paintBucketIconActive, 9, cellSize);
+            }
+            else
+            {
+                currentUI.drawButton(paintBucketIconIdle, 9, cellSize);
+            }
+
+            if (downloadSelected && ((GetTime() - downloadStartTime) < DOWNLOAD_DISPLAY_TIME))
+            {
+                currentUI.drawButton(downloadIconActive, 15, cellSize);
+            }
+            else
+            {
+                currentUI.drawButton(downloadIconIdle, 15, cellSize);
+                downloadSelected = false;
+            }
             
             currentCanvas.drawCanvas(xOffset, yOffset);
             currentCanvas.updateCanvasGridColours(xOffset, yOffset);
@@ -76,13 +114,22 @@ int main()
 
         EndDrawing();
     }
+
+    UnloadTexture(pencilIconIdle);
+    UnloadTexture(paintBucketIconIdle);
+    UnloadTexture(downloadIconIdle);
+
+    UnloadTexture(pencilIconActive);
+    UnloadTexture(paintBucketIconActive);
+    UnloadTexture(downloadIconActive);
+
     CloseWindow();
     return 0;
 }
 
-void handleUserInput(UI UI, Canvas& currentCanvas, pair <int, int> currentCell, Vector2 mousePosition)
+void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> currentCell, Vector2 mousePosition)
 {
-    UI.drawHoverColour(UI.getButton(mousePosition));
+    currentUI.drawHoverColour(currentUI.getButton(mousePosition));
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
         {
             if (currentCanvas.isWithinCanvas(currentCell))
@@ -99,7 +146,7 @@ void handleUserInput(UI UI, Canvas& currentCanvas, pair <int, int> currentCell, 
         }
 
         vector<Color> colourButtons = { RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE, BLACK };
-        int buttonIndex = UI.getButton(mousePosition);
+        int buttonIndex = currentUI.getButton(mousePosition);
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) 
         {
@@ -117,9 +164,11 @@ void handleUserInput(UI UI, Canvas& currentCanvas, pair <int, int> currentCell, 
                 pencilSelected = false;
                 paintBucketSelected = true;
             }
-            else if (buttonIndex == 10) //EXPORT
-            {
+            else if (buttonIndex == 15) //EXPORT
+            {                
                 exportToPNG(currentCanvas, currentCell);
+                downloadSelected = true;    
+                downloadStartTime = GetTime();
             }
         }
 
@@ -142,6 +191,8 @@ bool coloursAreEqual(Color firstColour, Color secondColour)
 
 void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell)
 {
+    showDownloadFeedback = true;
+
     int columns = currentCanvas.getWidth() / cellSize;
     int rows = currentCanvas.getHeight() / cellSize;
 
@@ -163,7 +214,7 @@ void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell)
 
     Image image = LoadImageFromTexture(canvas.texture);
     ImageFlipVertical(&image);
-    ExportImage(image, "PixelPaint.png");
+    ExportImage(image, "Masterpiece.png");
     
     UnloadImage(image);
     UnloadRenderTexture(canvas);
@@ -222,22 +273,4 @@ void paintBucket(Canvas& currentCanvas, pair<int, int> currentCell, Color newCol
         toFill.push({ cell.first, cell.second + 1 });
         toFill.push({ cell.first, cell.second - 1} );
     }
-}
-
-Color setColour(Vector2 mousePosition, int cellSize)
-{
-    int cellIndex = (mousePosition.x / cellSize);
-
-    switch (cellIndex)
-    {
-        case 3: return RED;
-        case 4: return ORANGE;
-        case 5: return YELLOW;
-        case 6: return GREEN;
-        case 7: return BLUE;
-        case 8: return PURPLE;
-        case 9: return BLACK;
-        case 10: return WHITE;
-        default: return BLACK;
-    }   
 }

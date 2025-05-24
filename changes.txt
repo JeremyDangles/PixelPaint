@@ -1,7 +1,5 @@
 Urgent:
-    Fix paint bucket
     Re-organise the way the UI Bar is set out (Redesign, Small windows pop up for colour selection?)
-    Move UI Class to separate cpp file and add as header
 
 Definitely:
     Add icons for paint and pencil

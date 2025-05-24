@@ -15,6 +15,11 @@ void UI::draw()
     DrawRectangle(0, 0, width, height, colour);
 }
 
+void UI::drawButton(Texture2D icon, int buttonIndex, int cellSize)
+{
+    DrawTexture(icon, 0, (buttonIndex * (cellSize * 2)), WHITE);
+}
+
 void UI::drawGrid()
 {
     int cellSize = (height / gridSize);
@@ -57,4 +62,14 @@ int UI::getButton(Vector2 position)
     int currentButton = position.y / cellSize;
 
     return currentButton;
+}
+
+Texture2D UI::loadButton(string filename, int cellSize)
+{
+    Image image = LoadImage(filename.c_str());
+    ImageResize(&image, (cellSize * 2), (cellSize * 2));
+    Texture2D icon = LoadTextureFromImage(image);
+    UnloadImage(image);
+
+    return icon;
 }
