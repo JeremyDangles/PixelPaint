@@ -15,6 +15,11 @@ string GetColorName(Color currentColour);
 void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> currentCell, Vector2 mousePosition);
 void paintBucket(Canvas& currentCanvas, pair<int, int> currentCell, Color newColour);
 
+void DrawHSVColorPicker(Rectangle rect);
+void handleUINavigation(UI currentUI, Texture2D pencilIcon, Texture2D paintBucketIcon, Texture2D colourPickerIcon, 
+                        Texture2D colourPickerIconCurrentColour, Texture2D clearIcon, Texture2D downloadIcon);
+
+
 Color UIHoverColour = WHITE;
 Color gridColour = RED;
 Color selectedColour = BLACK;
@@ -33,6 +38,7 @@ int UIGridSize = screenHeight / 32;
 
 bool pencilSelected = true;
 bool paintBucketSelected = false;
+bool colourPickerSelected = false;
 bool downloadSelected = false;
 bool clearCanvasSelected = false;
 
@@ -58,15 +64,12 @@ int main()
 
     UI currentUI(UIWidth, UIHeight, UIGridSize, UIColour, UIGridColour, UIHoverColour);
 
-    Texture2D pencilIconIdle = currentUI.loadButton("pencilIcon_Idle.png", cellSize);
-    Texture2D paintBucketIconIdle = currentUI.loadButton("paintBucketIcon_Idle.png", cellSize);
-    Texture2D downloadIconIdle = currentUI.loadButton("downloadIcon_Idle.png", cellSize);
-    Texture2D clearIconIdle = currentUI.loadButton("clearIcon_Idle.png", cellSize);
-
-    Texture2D pencilIconActive = currentUI.loadButton("pencilIcon_Active.png", cellSize);
-    Texture2D paintBucketIconActive = currentUI.loadButton("paintBucketIcon_Active.png", cellSize);
-    Texture2D downloadIconActive = currentUI.loadButton("downloadIcon_Active.png", cellSize);
-    Texture2D clearIconActive = currentUI.loadButton("clearIcon_Active.png", cellSize);
+    Texture2D pencilIcon = currentUI.loadButton("pencilIcon.png", cellSize);
+    Texture2D paintBucketIcon = currentUI.loadButton("paintBucketIcon.png", cellSize);
+    Texture2D downloadIcon = currentUI.loadButton("downloadIcon.png", cellSize);
+    Texture2D clearIcon = currentUI.loadButton("clearIcon.png", cellSize);
+    Texture2D colourPickerIcon = currentUI.loadButton("colourPickerIcon.png", cellSize);
+    Texture2D colourPickerIconCurrentColour = currentUI.loadButton("colourPickerIconCurrentColour.png", cellSize);
 
     while(!WindowShouldClose())
     {
@@ -83,64 +86,83 @@ int main()
             pair <int, int> currentCell = currentCanvas.getCellCoordinates(mousePosition, xOffset, yOffset);
             handleUserInput(currentUI, currentCanvas, currentCell, mousePosition);
 
-            if (pencilSelected)
-            {
-                currentUI.drawButton(pencilIconActive, 8, cellSize);
-            }
-            else
-            {
-                currentUI.drawButton(pencilIconIdle, 8, cellSize);
-            }
-
-            if (paintBucketSelected)
-            {
-                currentUI.drawButton(paintBucketIconActive, 9, cellSize);
-            }
-            else
-            {
-                currentUI.drawButton(paintBucketIconIdle, 9, cellSize);
-            }
-
-            if (clearCanvasSelected && ((GetTime() - flashStartTime) < BUTTON_DISPLAY_TIME))
-            {
-                currentUI.drawButton(clearIconActive, 14, cellSize);
-            }
-            else
-            {
-                currentUI.drawButton(clearIconIdle, 14, cellSize);
-                clearCanvasSelected = false;
-            }
-
-            if (downloadSelected && ((GetTime() - flashStartTime) < BUTTON_DISPLAY_TIME))
-            {
-                currentUI.drawButton(downloadIconActive, 15, cellSize);
-            }
-            else
-            {
-                currentUI.drawButton(downloadIconIdle, 15, cellSize);
-                downloadSelected = false;
-            }
-            
             currentCanvas.drawCanvas(xOffset, yOffset);
             currentCanvas.updateCanvasGridColours(xOffset, yOffset);
+
+            handleUINavigation(currentUI, pencilIcon, paintBucketIcon, colourPickerIcon, colourPickerIconCurrentColour, clearIcon, downloadIcon);
+            
+
 
             DrawFPS(screenWidth - 150, screenHeight - 50);
 
         EndDrawing();
     }
 
-    UnloadTexture(pencilIconIdle);
-    UnloadTexture(paintBucketIconIdle);
-    UnloadTexture(downloadIconIdle);
-    UnloadTexture(clearIconIdle);
-
-    UnloadTexture(pencilIconActive);
-    UnloadTexture(paintBucketIconActive);
-    UnloadTexture(downloadIconActive);
-    UnloadTexture(clearIconActive);
+    UnloadTexture(pencilIcon);
+    UnloadTexture(paintBucketIcon);
+    UnloadTexture(downloadIcon);
+    UnloadTexture(clearIcon);
+    UnloadTexture(colourPickerIcon);
+    UnloadTexture(colourPickerIconCurrentColour);
 
     CloseWindow();
     return 0;
+}
+
+void handleUINavigation(UI currentUI, Texture2D pencilIcon, Texture2D paintBucketIcon, Texture2D colourPickerIcon, 
+                        Texture2D colourPickerIconCurrentColour, Texture2D clearIcon, Texture2D downloadIcon)
+{
+    if (pencilSelected)
+    {
+        currentUI.drawButton(pencilIcon, 8, cellSize, WHITE);
+    }
+    else
+    {
+        currentUI.drawButton(pencilIcon, 8, cellSize, GRAY);
+    }
+
+    if (paintBucketSelected)
+    {
+        currentUI.drawButton(paintBucketIcon, 9, cellSize, WHITE);
+    }
+    else
+    {
+        currentUI.drawButton(paintBucketIcon, 9, cellSize, GRAY);
+    }
+
+    if (colourPickerSelected)
+    {
+        currentUI.drawButton(colourPickerIcon, 10, cellSize, WHITE);
+        currentUI.drawButton(colourPickerIconCurrentColour, 10, cellSize, selectedColour);
+        DrawRectangleLines(((float)cellSize * 2) + 1, ((float)screenHeight - 100) - 3, 204, 104, UIGridColour);
+        DrawHSVColorPicker({((float)cellSize * 2) + 3, ((float)screenHeight - 100) - 1, 200, 100} );
+    }
+    else
+    {
+        currentUI.drawButton(colourPickerIcon, 10, cellSize, DARKGRAY);
+        currentUI.drawButton(colourPickerIconCurrentColour, 10, cellSize, selectedColour);
+    }
+
+    if (clearCanvasSelected && ((GetTime() - flashStartTime) < BUTTON_DISPLAY_TIME))
+    {
+        currentUI.drawButton(clearIcon, 14, cellSize, WHITE);
+    }
+    else
+    {
+        currentUI.drawButton(clearIcon, 14, cellSize, DARKGRAY);
+        clearCanvasSelected = false;
+    }
+
+    if (downloadSelected && ((GetTime() - flashStartTime) < BUTTON_DISPLAY_TIME))
+    {
+        currentUI.drawButton(downloadIcon, 15, cellSize, WHITE);
+    }
+    else
+    {
+        currentUI.drawButton(downloadIcon, 15, cellSize, DARKGRAY);
+        downloadSelected = false;
+    }
+
 }
 
 void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> currentCell, Vector2 mousePosition)
@@ -174,11 +196,28 @@ void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> curren
             {
                 pencilSelected = true;
                 paintBucketSelected = false;
+                colourPickerSelected = false;
             }
             else if (buttonIndex == 9) // PAINT BUCKET TOOL
             {
                 pencilSelected = false;
                 paintBucketSelected = true;
+                colourPickerSelected = false;
+            }
+            else if (buttonIndex == 10) // COLOUR PICKER
+            {
+                if (!colourPickerSelected)
+                {
+                    colourPickerSelected = true;
+                }
+                else
+                {
+                    colourPickerSelected = false;
+                    pencilSelected = true;
+                }
+                pencilSelected = false;
+                paintBucketSelected = false;
+
             }
             else if (buttonIndex ==14) // CLEAR
             {
@@ -310,3 +349,19 @@ void paintBucket(Canvas& currentCanvas, pair<int, int> currentCell, Color newCol
         toFill.push({ cell.first, cell.second - 1} );
     }
 }
+
+void DrawHSVColorPicker(Rectangle rect) 
+{
+    for (int x = 0; x < rect.width; ++x) {
+        for (int y = 0; y < rect.height; ++y) {
+            float hue = (float)x / rect.width * 360.0f;
+            float saturation = 1.0f - (float)y / rect.height;
+            Color color = ColorFromHSV(hue, saturation, 1.0f);
+            DrawPixel((int)rect.x + x, (int)rect.y + y, color);
+        }
+    }
+}
+
+
+
+

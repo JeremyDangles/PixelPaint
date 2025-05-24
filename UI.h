@@ -22,7 +22,7 @@ class UI
         UI(int width, int height, int gridSize, Color colour, Color gridColour, Color hoverColour);
 
         void draw();
-        void drawButton(Texture2D icon, int buttonIndex, int cellSize);
+        void drawButton(Texture2D icon, int buttonIndex, int cellSize, Color tint);
         void drawGrid();
         void drawHoverColour(int hoverIndex);
         int getButton(Vector2 position);

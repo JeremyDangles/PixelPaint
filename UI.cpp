@@ -15,9 +15,9 @@ void UI::draw()
     DrawRectangle(0, 0, width, height, colour);
 }
 
-void UI::drawButton(Texture2D icon, int buttonIndex, int cellSize)
+void UI::drawButton(Texture2D icon, int buttonIndex, int cellSize, Color tint)
 {
-    DrawTexture(icon, 0, (buttonIndex * (cellSize * 2)), WHITE);
+    DrawTexture(icon, 0, (buttonIndex * (cellSize * 2)), tint);
 }
 
 void UI::drawGrid()
