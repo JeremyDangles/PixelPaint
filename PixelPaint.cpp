@@ -8,6 +8,7 @@
 
 using namespace std;
 
+void clearCanvas(Canvas& currentCanvas);
 bool coloursAreEqual(Color firstColour, Color secondColour);
 void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell);
 string GetColorName(Color currentColour);
@@ -33,10 +34,11 @@ int UIGridSize = screenHeight / 32;
 bool pencilSelected = true;
 bool paintBucketSelected = false;
 bool downloadSelected = false;
+bool clearCanvasSelected = false;
 
-bool showDownloadFeedback = false;
-float downloadStartTime = 0.0f;
-const float DOWNLOAD_DISPLAY_TIME = 0.15;
+bool showButtonFeedback = false;
+float flashStartTime = 0.0f;
+const float BUTTON_DISPLAY_TIME = 0.15;
 
 int main() 
 {
@@ -59,10 +61,12 @@ int main()
     Texture2D pencilIconIdle = currentUI.loadButton("pencilIcon_Idle.png", cellSize);
     Texture2D paintBucketIconIdle = currentUI.loadButton("paintBucketIcon_Idle.png", cellSize);
     Texture2D downloadIconIdle = currentUI.loadButton("downloadIcon_Idle.png", cellSize);
+    Texture2D clearIconIdle = currentUI.loadButton("clearIcon_Idle.png", cellSize);
 
     Texture2D pencilIconActive = currentUI.loadButton("pencilIcon_Active.png", cellSize);
     Texture2D paintBucketIconActive = currentUI.loadButton("paintBucketIcon_Active.png", cellSize);
     Texture2D downloadIconActive = currentUI.loadButton("downloadIcon_Active.png", cellSize);
+    Texture2D clearIconActive = currentUI.loadButton("clearIcon_Active.png", cellSize);
 
     while(!WindowShouldClose())
     {
@@ -97,7 +101,17 @@ int main()
                 currentUI.drawButton(paintBucketIconIdle, 9, cellSize);
             }
 
-            if (downloadSelected && ((GetTime() - downloadStartTime) < DOWNLOAD_DISPLAY_TIME))
+            if (clearCanvasSelected && ((GetTime() - flashStartTime) < BUTTON_DISPLAY_TIME))
+            {
+                currentUI.drawButton(clearIconActive, 14, cellSize);
+            }
+            else
+            {
+                currentUI.drawButton(clearIconIdle, 14, cellSize);
+                clearCanvasSelected = false;
+            }
+
+            if (downloadSelected && ((GetTime() - flashStartTime) < BUTTON_DISPLAY_TIME))
             {
                 currentUI.drawButton(downloadIconActive, 15, cellSize);
             }
@@ -118,10 +132,12 @@ int main()
     UnloadTexture(pencilIconIdle);
     UnloadTexture(paintBucketIconIdle);
     UnloadTexture(downloadIconIdle);
+    UnloadTexture(clearIconIdle);
 
     UnloadTexture(pencilIconActive);
     UnloadTexture(paintBucketIconActive);
     UnloadTexture(downloadIconActive);
+    UnloadTexture(clearIconActive);
 
     CloseWindow();
     return 0;
@@ -164,11 +180,17 @@ void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> curren
                 pencilSelected = false;
                 paintBucketSelected = true;
             }
+            else if (buttonIndex ==14) // CLEAR
+            {
+                clearCanvas(currentCanvas);
+                clearCanvasSelected = true;
+                flashStartTime = GetTime();
+            }
             else if (buttonIndex == 15) //EXPORT
             {                
                 exportToPNG(currentCanvas, currentCell);
                 downloadSelected = true;    
-                downloadStartTime = GetTime();
+                flashStartTime = GetTime();
             }
         }
 
@@ -181,6 +203,20 @@ void handleUserInput(UI currentUI, Canvas& currentCanvas, pair <int, int> curren
         }
 }
 
+void clearCanvas(Canvas& currentCanvas)
+{
+    int rows = currentCanvas.getHeight() / cellSize;
+    int columns = currentCanvas.getWidth() / cellSize;
+
+    for (int row = 0; row < rows; row++)
+    {
+        for (int column = 0; column < columns; column++)
+        {
+            currentCanvas.setCellColour({row, column}, transparentColour);
+        }
+    }
+}
+
 bool coloursAreEqual(Color firstColour, Color secondColour)
 {
     return ((firstColour.r == secondColour.r) &&
@@ -191,7 +227,7 @@ bool coloursAreEqual(Color firstColour, Color secondColour)
 
 void exportToPNG(Canvas currentCanvas, pair<int, int> currentCell)
 {
-    showDownloadFeedback = true;
+    showButtonFeedback = true;
 
     int columns = currentCanvas.getWidth() / cellSize;
     int rows = currentCanvas.getHeight() / cellSize;
