@@ -7,7 +7,7 @@
         "command": "clang++",
         "args": [
           "-std=c++17",
-          "PixelPaint.cpp", "Canvas.cpp",
+          "PixelPaint.cpp", "Canvas.cpp", "UI.cpp",
           "-o",
           "PixelPaint",
           "`pkg-config", "--cflags", "--libs", "raylib`"

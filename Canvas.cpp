@@ -10,7 +10,7 @@ Canvas::Canvas(int width, int height, Color colour, int gridSize)
 
 void Canvas::drawCanvas(float xOffset, float yOffset) const
 {
-    DrawRectangle(static_cast<int>(xOffset + 5), static_cast<int>(yOffset + 5), canvasWidth, canvasHeight, {0, 0, 0, 20});
+    DrawRectangle(static_cast<int>(xOffset + 5), static_cast<int>(yOffset + 5), canvasWidth, canvasHeight, {0, 0, 0, 50});
     DrawRectangle(static_cast<int>(xOffset), static_cast<int>(yOffset), canvasWidth, canvasHeight, canvasColour);
 } 
 
