@@ -1,73 +1,63 @@
 #include "UI.h"
 
-UI::UI(int width, int height, int gridSize, Color colour, Color gridColour, Color hoverColour)
+UI::UI(int numberOfButtons, int buttonSize, Color colour, Color gridColour, Color hoverColour)
 {
-    this->width = width;
-    this->height = height;
-    this->gridSize = gridSize;
+    this->numberOfButtons = numberOfButtons;
+    this->buttonSize = buttonSize;
     this->colour = colour;
     this->gridColour = gridColour;
     this->hoverColour = hoverColour;
 }
 
-void UI::draw()
+void UI::draw(int initialX, int initialY)
 {
-    DrawRectangle(0, 0, width, height, colour);
+    DrawRectangle(initialX, initialY, buttonSize, (buttonSize * numberOfButtons), colour);
 }
 
-void UI::drawButton(Texture2D icon, int buttonIndex, int cellSize, Color tint)
+void UI::drawButton(Texture2D icon, int buttonIndex, Color tint)
 {
-    DrawTexture(icon, 0, (buttonIndex * (cellSize * 2)), tint);
+    DrawTexture(icon, 0, (buttonIndex * buttonSize), tint);
 }
 
-void UI::drawGrid()
+void UI::drawGrid(int initialX, int initialY)
 {
-    int cellSize = (height / gridSize);
-
-    vector<Color> colours = { RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE, BLACK };
-    int numberOfColours = colours.size();
-
-    for (int y = 0; y < numberOfColours; y++)
+    for (int i = 0; i < numberOfButtons; i++)
     {
-        DrawRectangle(0, y * cellSize, width, cellSize, colours[y]); 
-    }
-
-    for (int y = 0; y < height; y += cellSize)
-    {
-        DrawRectangleLines(0, y, width, cellSize, gridColour); //Draws button outlines
+        int y = initialY + i * buttonSize;
+        DrawRectangleLines(initialX, y, buttonSize, buttonSize, gridColour); //Draws button outlines
     }      
 }
 
 void UI::drawHoverColour(int hoverIndex)
 {
-    if (hoverIndex < 0 || hoverIndex >= gridSize)
+    if (hoverIndex < 3 || hoverIndex > 11)
     {
         return;
     }
 
-    int cellSize = (height / gridSize);
-    int y = hoverIndex * cellSize;
+    int y = hoverIndex * buttonSize;
 
-    DrawRectangleLines(0, y, width, cellSize, hoverColour);
+    DrawRectangleLines(0, y, buttonSize, buttonSize, hoverColour);
 }
 
-int UI::getButton(Vector2 position)
+int UI::getButton(Vector2 position, int initialX, int initialY)
 {
-    if (position.x < 0 || position.x > width || position.y < 0 || position.y > height)
+    float localX = position.x - initialX;
+    float localY = position.y - initialY;
+
+    if (localX < 0 || localX > buttonSize || localY < (buttonSize * 4) || localY > (buttonSize * 12))
     {
         return -1;
     }
 
-    int cellSize = height / gridSize;
-    int currentButton = position.y / cellSize;
-
+    int currentButton = (localY / buttonSize);
     return currentButton;
 }
 
-Texture2D UI::loadButton(string filename, int cellSize)
+Texture2D UI::loadButton(string filename)
 {
     Image image = LoadImage(filename.c_str());
-    ImageResize(&image, (cellSize * 2), (cellSize * 2));
+    ImageResize(&image, buttonSize, buttonSize);
     Texture2D icon = LoadTextureFromImage(image);
     UnloadImage(image);
 

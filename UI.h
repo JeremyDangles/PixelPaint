@@ -9,24 +9,33 @@
 using namespace std;
 
 class UI
-{
+{   
+    public:
+        struct Button
+        {
+            Rectangle rectangle;
+            Texture2D icon;
+            bool hovered = false;
+            bool clicked = false;
+        };
+
+        UI(int numberOfButtons, int buttonSize, Color colour, Color gridColour, Color hoverColour);
+
+        void draw(int initialX, int initialY);
+        void drawButton(Texture2D icon, int buttonIndex, Color tint);
+        void drawGrid(int initialX, int initialY);
+        void drawHoverColour(int hoverIndex);
+        int getButton(Vector2 position, int initialX, int initialY);
+        Texture2D loadButton(string filename);
+
     private:
-        int width = 0;
-        int height = 0;
-        int gridSize = 0;
+        int numberOfButtons = 0;
+        int buttonSize = 0;
         Color colour = DARKGRAY;
         Color gridColour = BLACK;
         Color hoverColour = WHITE;
-        
-    public:
-        UI(int width, int height, int gridSize, Color colour, Color gridColour, Color hoverColour);
-
-        void draw();
-        void drawButton(Texture2D icon, int buttonIndex, int cellSize, Color tint);
-        void drawGrid();
-        void drawHoverColour(int hoverIndex);
-        int getButton(Vector2 position);
-        Texture2D loadButton(string filename, int cellSize);
+        vector<Button> buttons;
 };
+
 
 #endif // UI.h
